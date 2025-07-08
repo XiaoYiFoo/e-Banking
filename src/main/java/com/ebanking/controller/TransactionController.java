@@ -7,6 +7,7 @@ import com.ebanking.dto.TransactionRequest;
 import com.ebanking.dto.TransactionResponse;
 import com.ebanking.service.KafkaTransactionProducer;
 import com.ebanking.service.TransactionService;
+import com.ebanking.validation.NotZero;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -67,7 +68,11 @@ public class TransactionController {
                     responseCode = "400",
                     description = "Bad request",
                     content = @Content(
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "BadRequest",
+                                    value = "{ \"status\": 400, \"error\": \"Bad Request\", \"message\": \"Invalid value for parameter 'month': 'Jan'. Expected type: Integer\", \"path\": \"/api/v1/getTransaction\", \"timestamp\": \"2024-06-01 12:00:00\" }"
+                            )
                     )
             ),
             @ApiResponse(
@@ -81,7 +86,11 @@ public class TransactionController {
                     responseCode = "500",
                     description = "Failed to retrieve transactions",
                     content = @Content(
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "InternalServerError",
+                                    value = "{ \"status\": 500, \"error\": \"Internal Server Error\", \"message\": \"Failed to get transaction from Kafka\", \"path\": \"/api/v1/getTransaction\", \"timestamp\": \"2024-06-01 12:00:00\" }"
+                            )
                     )
             )
     })
@@ -160,7 +169,11 @@ public class TransactionController {
                     responseCode = "400",
                     description = "Bad request",
                     content = @Content(
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "BadRequest",
+                                    value = "{ \"status\": 400, \"error\": \"Bad Request\", \"message\": \"Invalid value for parameter 'amount': 'one hundred'. Expected type: BigDecimal\", \"path\": \"/api/v1/transactions\", \"timestamp\": \"2024-06-01 12:00:00\" }"
+                            )
                     )
             ),
             @ApiResponse(
@@ -174,7 +187,11 @@ public class TransactionController {
                     responseCode = "500",
                     description = "Failed to send transaction to Kafka",
                     content = @Content(
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "InternalServerError",
+                                    value = "{ \"status\": 500, \"error\": \"Internal Server Error\", \"message\": \"Failed to send transaction to Kafka\", \"path\": \"/api/v1/transactions\", \"timestamp\": \"2024-06-01 12:00:00\" }"
+                            )
                     )
             )
     })
@@ -182,8 +199,8 @@ public class TransactionController {
             Authentication authentication,
             @Parameter(description = "Transaction amount", required = true)
             @RequestParam
+            @NotZero
             @NotNull(message = "Amount is required")
-            @Min(value = 1, message = "Amount must be positive and at least 1")
             BigDecimal amount,
 
             @Parameter(description = "Transaction currency")

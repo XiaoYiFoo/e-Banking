@@ -79,19 +79,12 @@ public class GlobalExceptionHandler {
 
         log.warn("Validation failed: {}", ex.getMessage());
 
-        List<ErrorResponse.ValidationError> validationErrors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(this::mapToValidationError)
-                .collect(Collectors.toList());
-
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Validation Error")
                 .message("Request validation failed")
                 .path(request.getDescription(false))
                 .timestamp(LocalDateTime.now())
-                .validationErrors(validationErrors)
                 .build();
 
         return ResponseEntity.badRequest().body(errorResponse);
@@ -122,23 +115,12 @@ public class GlobalExceptionHandler {
 
         log.warn("Constraint violation occurred: {}", ex.getMessage());
 
-        // Extract validation errors and convert to ValidationError objects
-        Set<ConstraintViolation<?>> violations = ex.getConstraintViolations();
-        List<ErrorResponse.ValidationError> validationErrors = violations.stream()
-                .map(violation -> ErrorResponse.ValidationError.builder()
-                        .field(violation.getPropertyPath().toString())
-                        .message(violation.getMessage())
-                        .rejectedValue(violation.getInvalidValue() != null ? violation.getInvalidValue().toString() : null)
-                        .build())
-                .collect(Collectors.toList());
-
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Validation Failed")
                 .message("Request validation failed")
                 .path(((ServletWebRequest) request).getRequest().getRequestURI())
                 .timestamp(LocalDateTime.now())
-                .validationErrors(validationErrors)
                 .build();
 
         return ResponseEntity.badRequest().body(errorResponse);

@@ -20,7 +20,9 @@ com\ebanking\dto\TransactionRequest.class
 com\ebanking\config\SecurityConfig.class
 com\ebanking\security\JwtAuthenticationFilter.class
 com\ebanking\security\JwtService.class
+com\ebanking\validation\NotZeroValidator.class
 com\ebanking\config\WebConfig.class
+com\ebanking\validation\NotZero.class
 com\ebanking\controller\TransactionController.class
 com\ebanking\repository\TransactionRepository.class
 com\ebanking\service\KafkaTransactionProducer.class

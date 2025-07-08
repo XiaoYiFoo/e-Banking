@@ -1,5 +1,6 @@
 package com.ebanking.domain;
 
+import com.ebanking.validation.NotZero;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,6 +45,7 @@ public class Transaction {
 
     @NotNull(message = "Amount is required")
     @Schema(description = "Transaction amount", example = "100.00")
+    @NotZero
     private BigDecimal amount;
 
     @NotBlank(message = "Currency is required")

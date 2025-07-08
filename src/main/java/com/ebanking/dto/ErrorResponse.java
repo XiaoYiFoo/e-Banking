@@ -40,12 +40,6 @@ public class ErrorResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
 
-    @Schema(description = "Correlation ID for tracking the request", example = "req-12345")
-    private String correlationId;
-
-    @Schema(description = "List of validation errors (if applicable)")
-    private List<ValidationError> validationErrors;
-
     /**
      * Nested class for validation errors.
      */
@@ -91,17 +85,4 @@ public class ErrorResponse {
                 .build();
     }
 
-    /**
-     * Static factory method for creating an error response with correlation ID.
-     */
-    public static ErrorResponse of(int status, String error, String message, String path, String correlationId) {
-        return ErrorResponse.builder()
-                .status(status)
-                .error(error)
-                .message(message)
-                .path(path)
-                .correlationId(correlationId)
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
 }

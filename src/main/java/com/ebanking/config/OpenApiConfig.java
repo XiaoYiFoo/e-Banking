@@ -37,7 +37,7 @@ public class OpenApiConfig {
                                 - Real-time transaction data from Kafka
                                 
                                 ## Authentication
-                                All API endpoints require JWT authentication. Include the JWT token in the Authorization header:
+                                Transaction endpoints require JWT authentication. Include the JWT token in the Authorization header:
                                 ```
                                 Authorization: Bearer <your-jwt-token>
                                 ```
