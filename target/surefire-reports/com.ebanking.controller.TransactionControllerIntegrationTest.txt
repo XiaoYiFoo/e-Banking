@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.ebanking.controller.TransactionControllerIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.17 s -- in com.ebanking.controller.TransactionControllerIntegrationTest

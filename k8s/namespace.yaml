@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ebanking
+  labels:
+    name: ebanking
+    app: ebanking-transaction-service
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+  labels:
+    name: kafka
+    app: kafka-cluster 

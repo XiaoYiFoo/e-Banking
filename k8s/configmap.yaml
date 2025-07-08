@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service-config
+  namespace: ebanking
+  labels:
+    app: ebanking-transaction-service
+data:
+  application.yml: |
+    server:
+      port: 8080
+    
+    spring:
+      application:
+        name: transaction-service
+      
+      kafka:
+        bootstrap-servers: kafka.kafka.svc.cluster.local:9092
+        consumer:
+          group-id: transaction-service-group
+          auto-offset-reset: earliest
+          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+          properties:
+            spring.json.trusted.packages: com.ebanking.domain
+            spring.json.type.mapping: transaction:com.ebanking.domain.Transaction
+        listener:
+          ack-mode: MANUAL_IMMEDIATE
+          concurrency: 3
+        producer:
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    
+      jackson:
+        date-format: yyyy-MM-dd
+        time-zone: UTC
+        default-property-inclusion: non_null
+    
+    # Management endpoints
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus
+      endpoint:
+        health:
+          show-details: when-authorized
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+    
+    # Logging configuration
+    logging:
+      level:
+        com.ebanking: INFO
+        org.springframework.kafka: INFO
+        org.springframework.security: INFO
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+    # Application specific configuration
+    app:
+      kafka:
+        topic:
+          transactions: transactions
+      exchange-rate:
+        api:
+          base-url: https://api.exchangerate-api.com/v4/latest
+          timeout: 5000
+      security:
+        jwt:
+          secret: ${JWT_SECRET:your-secret-key-here-make-it-long-and-secure-in-production}
+          expiration: 86400000 # 24 hours in milliseconds
+      pagination:
+        default-page-size: 20
+        max-page-size: 100 

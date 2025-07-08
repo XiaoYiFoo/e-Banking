@@ -1,0 +1,353 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: transaction-service
+#   namespace: ebanking
+#   labels:
+#     app: ebanking-transaction-service
+#     version: v1.0.0
+# spec:
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app: ebanking-transaction-service
+#   template:
+#     metadata:
+#       labels:
+#         app: ebanking-transaction-service
+#         version: v1.0.0
+#       annotations:
+#         prometheus.io/scrape: "true"
+#         prometheus.io/port: "8080"
+#         prometheus.io/path: "/actuator/prometheus"
+#     spec:
+#       containers:
+#       - name: transaction-service
+#         image: ebanking/transaction-service:latest
+#         imagePullPolicy: Always
+#         ports:
+#         - containerPort: 8080
+#           name: http
+#           protocol: TCP
+#         env:
+#         - name: SPRING_PROFILES_ACTIVE
+#           value: "kubernetes"
+#         - name: JWT_SECRET
+#           valueFrom:
+#             secretKeyRef:
+#               name: transaction-service-secrets
+#               key: JWT_SECRET
+#         - name: KUBERNETES_NAMESPACE
+#           valueFrom:
+#             fieldRef:
+#               fieldPath: metadata.namespace
+#         - name: POD_NAME
+#           valueFrom:
+#             fieldRef:
+#               fieldPath: metadata.name
+#         - name: POD_IP
+#           valueFrom:
+#             fieldRef:
+#               fieldPath: status.podIP
+#         resources:
+#           requests:
+#             memory: "512Mi"
+#             cpu: "250m"
+#           limits:
+#             memory: "1Gi"
+#             cpu: "500m"
+#         livenessProbe:
+#           httpGet:
+#             path: /actuator/health
+#             port: 8080
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+#           timeoutSeconds: 10
+#           failureThreshold: 3
+#         readinessProbe:
+#           httpGet:
+#             path: /actuator/health
+#             port: 8080
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         startupProbe:
+#           httpGet:
+#             path: /actuator/health
+#             port: 8080
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 30
+#         volumeMounts:
+#         - name: config-volume
+#           mountPath: /app/config
+#           readOnly: true
+#         - name: logs-volume
+#           mountPath: /app/logs
+#       volumes:
+#       - name: config-volume
+#         configMap:
+#           name: transaction-service-config
+#       - name: logs-volume
+#         emptyDir: {}
+#       restartPolicy: Always
+#       terminationGracePeriodSeconds: 30
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: transaction-service-canary
+#   namespace: ebanking
+#   labels:
+#     app: ebanking-transaction-service-canary
+#     version: v1.1.0
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: ebanking-transaction-service-canary
+#   template:
+#     metadata:
+#       labels:
+#         app: ebanking-transaction-service-canary
+#         version: v1.1.0
+#     spec:
+#       containers:
+#       - name: transaction-service
+#         image: ebanking/transaction-service:v1.1.0
+#         imagePullPolicy: Always
+#         ports:
+#         - containerPort: 8080
+#           name: http
+#           protocol: TCP
+#         env:
+#         - name: SPRING_PROFILES_ACTIVE
+#           value: "kubernetes"
+#         - name: JWT_SECRET
+#           valueFrom:
+#             secretKeyRef:
+#               name: transaction-service-secrets
+#               key: JWT_SECRET
+#         resources:
+#           requests:
+#             memory: "512Mi"
+#             cpu: "250m"
+#           limits:
+#             memory: "1Gi"
+#             cpu: "500m"
+#         livenessProbe:
+#           httpGet:
+#             path: /actuator/health
+#             port: 8080
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+#           timeoutSeconds: 10
+#           failureThreshold: 3
+#         readinessProbe:
+#           httpGet:
+#             path: /actuator/health
+#             port: 8080
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         volumeMounts:
+#         - name: config-volume
+#           mountPath: /app/config
+#           readOnly: true
+#       volumes:
+#       - name: config-volume
+#         configMap:
+#           name: transaction-service-config 
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-service
+  namespace: kafka
+spec:
+  ports:
+  - port: 2181
+    name: client
+  selector:
+    app: zookeeper
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: kafka
+spec:
+  serviceName: zookeeper-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:7.4.0
+        ports:
+        - containerPort: 2181
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        - name: ZOOKEEPER_TICK_TIME
+          value: "2000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: zookeeper-data
+          mountPath: /var/lib/zookeeper/data
+  volumeClaimTemplates:
+  - metadata:
+      name: zookeeper-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: kafka
+spec:
+  ports:
+  - port: 9092
+    name: kafka
+  selector:
+    app: kafka
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka
+spec:
+  serviceName: kafka-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.4.0
+        ports:
+        - containerPort: 9092
+        env:
+        - name: KAFKA_BROKER_ID
+          value: "0"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zookeeper-service:2181"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka-service:9092,PLAINTEXT_HOST://localhost:29092"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+          value: "0"
+        - name: KAFKA_JMX_PORT
+          value: "9101"
+        - name: KAFKA_JMX_HOSTNAME
+          value: "localhost"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"
+        - name: KAFKA_DELETE_TOPIC_ENABLE
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka/data
+  volumeClaimTemplates:
+  - metadata:
+      name: kafka-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui-service
+  namespace: kafka
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30080
+  selector:
+    app: kafka-ui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+      - name: kafka-ui
+        image: provectuslabs/kafka-ui:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_CLUSTERS_0_NAME
+          value: "local"
+        - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+          value: "kafka-service:9092"
+        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+          value: "zookeeper-service:2181"
+        - name: KAFKA_CLUSTERS_0_READONLY
+          value: "false"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m" 

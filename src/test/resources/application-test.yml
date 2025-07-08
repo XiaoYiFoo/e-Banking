@@ -1,0 +1,48 @@
+server:
+  port: 0  # Use random port for tests
+
+spring:
+  application:
+    name: transaction-service-test
+
+  # H2 Database Configuration for Tests
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration for Tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # H2 Console Configuration for Tests
+  h2:
+    console:
+      enabled: false  # Disable H2 console for tests
+
+  # Kafka Configuration for Tests (mocked)
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      auto-offset-reset: earliest
+      group-id: test-group
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Logging for Tests
+logging:
+  level:
+    com.ebanking: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.springframework.kafka: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

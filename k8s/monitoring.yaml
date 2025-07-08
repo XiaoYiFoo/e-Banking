@@ -1,0 +1,156 @@
+# Prometheus ServiceMonitor for Transaction Service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: transaction-service-monitor
+  namespace: ebanking
+  labels:
+    app: ebanking-transaction-service
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ebanking-transaction-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - ebanking
+---
+# Prometheus ServiceMonitor for Kafka
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-monitor
+  namespace: kafka
+  labels:
+    app: kafka
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: kafka
+  endpoints:
+  - port: jmx
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - kafka
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service-dashboard
+  namespace: ebanking
+  labels:
+    app: ebanking-transaction-service
+data:
+  transaction-service-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "e-Banking Transaction Service",
+        "tags": ["ebanking", "transaction-service"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "HTTP Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_server_requests_seconds_count{job=\"transaction-service\"}[5m])",
+                "legendFormat": "{{method}} {{uri}}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Response Time",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"transaction-service\"}[5m]))",
+                "legendFormat": "95th percentile"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "JVM Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "jvm_memory_used_bytes{job=\"transaction-service\"}",
+                "legendFormat": "{{area}}"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Kafka Consumer Lag",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "kafka_consumer_group_max_lag{job=\"transaction-service\"}",
+                "legendFormat": "{{group}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+---
+# AlertManager Alert Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: transaction-service-alerts
+  namespace: ebanking
+  labels:
+    app: ebanking-transaction-service
+    release: prometheus
+spec:
+  groups:
+  - name: transaction-service
+    rules:
+    - alert: TransactionServiceDown
+      expr: up{job="transaction-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Transaction Service is down"
+        description: "Transaction Service has been down for more than 1 minute"
+    
+    - alert: HighResponseTime
+      expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="transaction-service"}[5m])) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High response time detected"
+        description: "95th percentile response time is above 2 seconds"
+    
+    - alert: HighErrorRate
+      expr: rate(http_server_requests_seconds_count{job="transaction-service",status=~"5.."}[5m]) / rate(http_server_requests_seconds_count{job="transaction-service"}[5m]) > 0.05
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate is above 5%"
+    
+    - alert: KafkaConsumerLag
+      expr: kafka_consumer_group_max_lag{job="transaction-service"} > 1000
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High Kafka consumer lag"
+        description: "Kafka consumer lag is above 1000 messages" 

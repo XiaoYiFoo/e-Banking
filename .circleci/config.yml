@@ -1,0 +1,59 @@
+version: 2.1
+
+jobs:
+  unit-test:
+    docker:
+      - image: cimg/openjdk:17.0.10
+    steps:
+      - checkout
+      - run:
+          name: Install Maven
+          command: |
+            wget https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz
+            tar -xzf apache-maven-3.9.5-bin.tar.gz
+            export PATH=$PATH:$(pwd)/apache-maven-3.9.5/bin
+      - restore_cache:
+          key: maven-deps-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Unit Tests
+          command: |
+            export PATH=$PATH:$(pwd)/apache-maven-3.9.5/bin
+            mvn test -P unit-test
+      - store_test_results:
+          path: target/surefire-reports
+      - store_artifacts:
+          path: target/surefire-reports
+          destination: unit-test-results
+
+  integration-test:
+    docker:
+      - image: cimg/openjdk:17.0.10
+    steps:
+      - checkout
+      - run:
+          name: Install Maven
+          command: |
+            wget https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz
+            tar -xzf apache-maven-3.9.5-bin.tar.gz
+            export PATH=$PATH:$(pwd)/apache-maven-3.9.5/bin
+      - restore_cache:
+          key: maven-deps-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Integration Tests
+          command: |
+            export PATH=$PATH:$(pwd)/apache-maven-3.9.5/bin
+            mvn test -P integration-test
+      - store_test_results:
+          path: target/surefire-reports
+      - store_artifacts:
+          path: target/surefire-reports
+          destination: integration-test-results
+
+workflows:
+  version: 2
+  test-and-build:
+    jobs:
+      - unit-test
+      - integration-test:
+          requires:
+            - unit-test

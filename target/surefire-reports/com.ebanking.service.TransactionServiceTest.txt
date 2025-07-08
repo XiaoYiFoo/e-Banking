@@ -1,0 +1,48 @@
+-------------------------------------------------------------------------------
+Test set: com.ebanking.service.TransactionServiceTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 0.315 s <<< FAILURE! -- in com.ebanking.service.TransactionServiceTest
+com.ebanking.service.TransactionServiceTest.getTransactions_ShouldHandleExchangeRateFailure -- Time elapsed: 0.012 s <<< ERROR!
+java.lang.RuntimeException: Exchange rate service unavailable
+	at com.ebanking.service.ExchangeRateService.convertToBaseCurrency(ExchangeRateService.java:34)
+	at com.ebanking.service.TransactionService.getTransactions(TransactionService.java:45)
+	at com.ebanking.service.TransactionServiceTest.getTransactions_ShouldHandleExchangeRateFailure(TransactionServiceTest.java:157)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:578)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.ebanking.service.TransactionServiceTest.getTransactions_ShouldReturnPaginatedTransactions -- Time elapsed: 0.013 s <<< ERROR!
+org.mockito.exceptions.misusing.PotentialStubbingProblem: 
+
+Strict stubbing argument mismatch. Please check:
+ - this invocation of 'convertToBaseCurrency' method:
+    exchangeRateService.convertToBaseCurrency(
+    -50.00,
+    "EUR",
+    "GBP",
+    2024-07-15
+);
+    -> at com.ebanking.service.TransactionService.getTransactions(TransactionService.java:45)
+ - has following stubbing(s) with different arguments:
+    1. exchangeRateService.convertToBaseCurrency(
+    null,
+    null,
+    null,
+    null
+);
+      -> at com.ebanking.service.TransactionServiceTest.getTransactions_ShouldReturnPaginatedTransactions(TransactionServiceTest.java:100)
+Typically, stubbing argument mismatch indicates user mistake when writing tests.
+Mockito fails early so that you can debug potential problem easily.
+However, there are legit scenarios when this exception generates false negative signal:
+  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
+    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
+  - stubbed method is intentionally invoked with different arguments by code under test
+    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
+For more information see javadoc for PotentialStubbingProblem class.
+	at com.ebanking.service.ExchangeRateService.convertToBaseCurrency(ExchangeRateService.java:34)
+	at com.ebanking.service.TransactionService.getTransactions(TransactionService.java:45)
+	at com.ebanking.service.TransactionServiceTest.getTransactions_ShouldReturnPaginatedTransactions(TransactionServiceTest.java:105)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:578)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
