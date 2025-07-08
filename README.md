@@ -1,5 +1,12 @@
-# e-Banking Transaction Service
+### Run docker container
+- docker pull xiaoyifoo/transaction-service:latest
+- docker compose up
 
+**Access the API**
+- API Base URL: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
+
+# e-Banking Transaction Service
 A microservice for retrieving paginated transaction lists with exchange rate conversion for authenticated e-Banking users.
 
 ## Overview
@@ -48,61 +55,46 @@ src/
 └── docker/                  # Docker configuration
 ```
 
-## Quick Start
-
-### Prerequisites
-
-- Java 17 or higher
-- Maven 3.6+
-- Docker (optional)
-- Kafka (for production-like testing)
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd e-Banking
-   ```
-
-2. **Build the project**
-   ```bash
-   mvn clean install
-   ```
-
-3. **Run the application**
-   ```bash
-   mvn spring-boot:run
-   ```
-
-4. **Access the API**
-   - API Base URL: `http://localhost:8080/api/v1`
-   - Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
-   - Health Check: `http://localhost:8080/api/v1/actuator/health`
-
-### Docker
-
-1. **Build the Docker image**
-   ```bash
-   docker build -t ebanking-transaction-service .
-   ```
-
-2. **Run the container**
-   ```bash
-   docker run -p 8080:8080 ebanking-transaction-service
-   ```
-
 ## API Documentation
 
 ### Authentication
 
-All API endpoints require JWT authentication. Include the JWT token in the Authorization header:
+Transaction endpoints require JWT authentication. Include the JWT token in the Authorization header:
 
 ```
 Authorization: Bearer <your-jwt-token>
 ```
 
 ### Endpoints
+
+
+#### Generate Token
+
+```
+GET /api/token/generate
+```
+
+**Query Parameters:**
+- `customerId` (required): string
+
+**Example Request:**
+```bash
+curl -X 'POST' \
+  'http://localhost:8080/api/token/generate' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "customerId": "sherry"
+}'
+```
+
+**Example Response:**
+```json
+{
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzaGVycnkiLCJpYXQiOjE3NTE5NjQzNTYsImV4cCI6MTc1MjA1MDc1Nn0.tj0cdpOV80g4HYuiMwiHmBvgb-iLg2JULTENa1YSjV0"
+}
+```
+
 
 #### Get Transactions
 
@@ -136,8 +128,8 @@ curl -X GET "http://localhost:8080/api/v1/transactions?month=10&year=2020&page=0
       "description": "Online payment CHF"
     }
   ],
-  "totalCredit": 5000.00,
-  "totalDebit": 3000.00,
+  "totalCredit": 0,
+  "totalDebit": 100.00,
   "baseCurrency": "GBP",
   "page": 0,
   "size": 20,
@@ -200,14 +192,6 @@ mvn verify
 mvn test -Dtest=ContractTest
 ```
 
-## Monitoring and Health Checks
-
-### Health Endpoints
-- `/actuator/health`: Application health status
-- `/actuator/info`: Application information
-- `/actuator/metrics`: Application metrics
-- `/actuator/prometheus`: Prometheus metrics
-
 ### Logging
 
 The application uses structured logging with the following levels:
@@ -236,39 +220,6 @@ The application uses structured logging with the following levels:
    ```bash
    oc apply -f openshift/
    ```
-
-## Security Considerations
-
-- JWT tokens are validated on every request
-- Sensitive configuration is externalized via environment variables
-- API endpoints are rate-limited
-- Input validation is enforced on all parameters
-- HTTPS is required in production
-
-## Performance Considerations
-
-- Kafka consumer concurrency is configurable
-- Pagination limits prevent excessive data retrieval
-- Exchange rate caching reduces external API calls
-- Connection pooling for external services
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support and questions, please contact:
-- Email: dev@ebanking.com
-- Documentation: [API Documentation](http://localhost:8080/api/v1/swagger-ui.html) 
 
 -cd C:\Users\fxiao\OneDrive\Desktop\e-Banking
 - open Docker Desktop
